@@ -1,20 +1,52 @@
 # Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+Demo for terraform on Azure
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+# Workplace setup using PowerShell 7
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+## Login
+Connect-AzAccount
+## Get subscriptions
+Get-AzSubscription
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+## Set subscription
+Set-AzContext -Subscription "Visual Studio Professional-abonnement"
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+## Insufficient privileges to create a service principal, but if you have:
+$sp = New-AzADServicePrincipal -DisplayName sp_terraform
+New-AzADServicePrincipal: Insufficient privileges to complete the operation.
+
+## Make note of the ApplicationId. You need it later
+$sp.ApplicationId
+
+##
+# 
+Storage account for Terraform
+az group create -n dev-terraform-backend-rg -l westeurope
+
+# storage account
+az storage account create --resource-group dev-terraform-backend-rg --name devterraformbackendsa --sku Standard_LRS --encryption-services blob
+
+# Get storage account key
+ACCOUNT_KEY=$(az storage account keys list --resource-group dev-terraform-backend-rg --account-name devterraformbackendsa --query [0].value -o tsv)
+
+# Create blob container
+az storage container create --name terraform-backend-files --account-name devterraformbackendsa --account-key $ACCOUNT_KEY
+
+From <https://medium.com/microsoftazure/creating-a-single-secure-azure-devops-yaml-pipeline-to-provision-multiple-environments-using-620900aae18> 
+
+
+## terraform commands used
+### one-time only
+terraform init -backend-config="terraform-backend.secrets"
+
+terraform validate
+
+### create plan to create/update services
+terraform plan -out test-create.plan
+### create/update services
+terraform apply test-create.plan
+
+### create plan to destroy services
+terraform plan -destroy -out test-destroy.plan
+### destroy services
+terraform apply test-destroy.plan
