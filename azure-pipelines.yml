@@ -1,0 +1,48 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  - group: terra-dev
+
+stages:
+- stage: PlanTerraform
+  displayName: Install and init Terraform
+  jobs:
+  - job: InstallTerraform
+    displayName: Install and init Terraform
+    steps: 
+    - task: TerraformInstaller@0
+      displayName: Run Terraform installer
+      inputs:
+        terraformVersion: 'latest'
+    - task: TerraformCLI@0
+      displayName: 'check terraform version'
+      inputs:
+        command: version
+    - script: |
+        echo "script to check where we are"
+        pwd
+        ls -la
+        echo "environment variables:"
+        env | grep "ARM" | sort > terraform/arm_vars.tf 
+      displayName: Check directory content
+    - task: TerraformCLI@0
+      displayName: 'terraform init'
+      inputs:
+        command: init
+        backendType: azurerm
+        backendServiceArm: 'Terraform'
+#        backendAzureRmResourceGroupName: $(TerraformBackend.ResourceGroup)
+#        backendAzureRmStorageAccountName: $(TerraformBackend.StorageAccount)
+#        backendAzureRmContainerName: '$(TerraformBackend.ContainerName)'
+#        backendAzureRmKey: 'infrastructure/terraform.tfstate'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform/' 
+
